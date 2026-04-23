@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>World Tea Houses</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #faf6ef;
+      --parchment: #f0e8d8;
+      --tea-green: #4a7c59;
+      --tea-dark: #2d5a3d;
+      --tea-light: #a8c9b0;
+      --gold: #c9943a;
+      --gold-light: #e8c97a;
+      --ink: #1a1a14;
+      --ink-muted: #5a5548;
+      --water: #8bb4c8;
+      --water-light: #b8d4e4;
+      --ocean: #6a9fb5;
+      --land: #c8d8a8;
+      --land-hover: #b8cc95;
+      --shadow: rgba(26,26,20,0.15);
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px;
+      height: 64px;
+      background: var(--cream);
+      border-bottom: 1px solid rgba(26,26,20,0.12);
+    }
+    .header-title {
+      display: flex; align-items: baseline; gap: 10px;
+    }
+    .header-title h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px; font-weight: 600;
+      color: var(--ink); letter-spacing: 0.01em;
+    }
+    .header-title span {
+      font-size: 13px; color: var(--ink-muted); font-weight: 300;
+      letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .header-right {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .filter-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px; font-weight: 400;
+      padding: 5px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(26,26,20,0.2);
+      background: transparent;
+      color: var(--ink-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .filter-btn:hover { border-color: var(--tea-green); color: var(--tea-green); }
+    .filter-btn.active {
+      background: var(--tea-green); border-color: var(--tea-green);
+      color: #fff;
+    }
+
+    /* ── Map ── */
+    #map-wrap {
+      position: fixed;
+      top: 64px; left: 0; right: 0; bottom: 0;
+      overflow: hidden;
+      background: var(--water-light);
+      cursor: grab;
+    }
+    #map-wrap:active { cursor: grabbing; }
+    #map-stage {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+    svg#world-svg {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+    /* subtle ocean texture via repeating pattern */
+    .ocean-bg {
+      fill: var(--water-light);
+    }
+    .country-path {
+      fill: var(--land);
+      stroke: #fff;
+      stroke-width: 0.5px;
+      transition: fill 0.1s;
+    }
+
+    /* ── Pins ── */
+    .tea-pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+      transition: transform 0.15s cubic-bezier(.34,1.56,.64,1);
+    }
+    .tea-pin:hover { transform: translate(-50%, -50%) scale(1.45); z-index: 20; }
+    .tea-pin.active { transform: translate(-50%, -50%) scale(1.5); z-index: 30; }
+    .pin-icon {
+      font-size: 20px;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.25));
+      line-height: 1;
+    }
+    .pin-pulse {
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      background: rgba(74,124,89,0.2);
+      animation: pulse 2.4s ease-out infinite;
+      pointer-events: none;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.7); opacity: 0.7; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+
+    /* ── Tooltip ── */
+    .tooltip {
+      position: fixed;
+      z-index: 500;
+      background: var(--cream);
+      border: 1px solid rgba(26,26,20,0.12);
+      border-radius: 12px;
+      padding: 16px 18px;
+      width: 260px;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.15s, transform 0.15s;
+      box-shadow: 0 8px 32px rgba(26,26,20,0.12);
+    }
+    .tooltip.visible { opacity: 1; transform: translateY(0); }
+    .tooltip-icon { font-size: 26px; margin-bottom: 8px; display: block; }
+    .tooltip h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px; font-weight: 600; color: var(--ink);
+      margin-bottom: 3px; line-height: 1.3;
+    }
+    .tooltip .city {
+      font-size: 11px; color: var(--gold); font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      margin-bottom: 8px;
+    }
+    .tooltip p {
+      font-size: 12px; color: var(--ink-muted); line-height: 1.55;
+      margin-bottom: 10px;
+    }
+    .tooltip-tags {
+      display: flex; flex-wrap: wrap; gap: 4px;
+    }
+    .tag {
+      font-size: 10px; padding: 2px 9px;
+      border-radius: 999px;
+      background: rgba(74,124,89,0.1);
+      color: var(--tea-dark);
+      border: 1px solid rgba(74,124,89,0.2);
+    }
+
+    /* ── Controls ── */
+    .map-controls {
+      position: fixed; bottom: 28px; left: 28px;
+      z-index: 200;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .ctrl-btn {
+      width: 36px; height: 36px;
+      background: var(--cream);
+      border: 1px solid rgba(26,26,20,0.15);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: var(--ink);
+      transition: background 0.1s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .ctrl-btn:hover { background: var(--parchment); }
+
+    /* ── Counter ── */
+    .counter {
+      position: fixed; bottom: 28px; right: 28px;
+      z-index: 200;
+      background: var(--cream);
+      border: 1px solid rgba(26,26,20,0.12);
+      border-radius: 10px;
+      padding: 10px 18px;
+      text-align: center;
+    }
+    .counter-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px; font-weight: 600; color: var(--tea-green);
+      line-height: 1;
+    }
+    .counter-label {
+      font-size: 10px; color: var(--ink-muted);
+      text-transform: uppercase; letter-spacing: 0.07em;
+      margin-top: 2px;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      z-index: 200;
+      background: var(--cream);
+      border: 1px solid rgba(26,26,20,0.12);
+      border-radius: 10px;
+      padding: 8px 16px;
+      display: flex; gap: 16px;
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; color: var(--ink-muted);
+    }
+    .legend-icon { font-size: 14px; }
+
+    /* ── Intro overlay ── */
+    #intro {
+      position: fixed; inset: 0; z-index: 999;
+      background: var(--cream);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+      opacity: 1; transition: opacity 0.6s;
+    }
+    #intro.hidden { opacity: 0; pointer-events: none; }
+    #intro .big-icon { font-size: 56px; }
+    #intro h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px; font-weight: 600; color: var(--ink);
+    }
+    #intro p { font-size: 14px; color: var(--ink-muted); }
+  </style>
+</head>
+<body>
+
+<!-- Intro splash -->
+<div id="intro">
+  <div class="big-icon">🍵</div>
+  <h2>World Tea Houses</h2>
+  <p>Loading the map…</p>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="header-title">
+    <h1>🍵 World Tea Houses</h1>
+    <span>36 destinations</span>
+  </div>
+  <div class="header-right" id="filter-bar"></div>
+</header>
+
+<!-- Map -->
+<div id="map-wrap">
+  <div id="map-stage">
+    <svg id="world-svg" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+      <rect class="ocean-bg" width="1000" height="500"/>
+    </svg>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- Controls -->
+<div class="map-controls">
+  <button class="ctrl-btn" id="zoom-in" title="Zoom in">+</button>
+  <button class="ctrl-btn" id="zoom-out" title="Zoom out">−</button>
+  <button class="ctrl-btn" id="zoom-reset" title="Reset view">⌂</button>
+</div>
+
+<!-- Counter -->
+<div class="counter">
+  <div class="counter-num" id="shown-count">36</div>
+  <div class="counter-label">tea houses</div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><span class="legend-icon">🍵</span> East Asian</div>
+  <div class="legend-item"><span class="legend-icon">☕</span> South Asian</div>
+  <div class="legend-item"><span class="legend-icon">🫖</span> Middle Eastern</div>
+  <div class="legend-item"><span class="legend-icon">🍶</span> European</div>
+</div>
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+
+<script>
+/* ────────────────────────────────────────────────
+   DATA
+──────────────────────────────────────────────── */
+const teaHouses = [
+  { name:"Wangfujing Teahouse", city:"Beijing, China", lat:39.91, lng:116.41, type:"East Asian", desc:"A grand multi-story teahouse in Beijing's famous shopping street, hosting traditional gongfu cha ceremonies.", tags:["Gongfu cha","Pu-erh","Historic"] },
+  { name:"Ten Fu Tea", city:"Shanghai, China", lat:31.23, lng:121.47, type:"East Asian", desc:"One of Shanghai's most beloved chain teahouses, celebrated for Longjing green tea and dim sum pairings.", tags:["Longjing","Dim sum","Modern"] },
+  { name:"Urasenke Chado", city:"Kyoto, Japan", lat:35.01, lng:135.76, type:"East Asian", desc:"The ancestral home of the Urasenke school of Japanese tea ceremony, dating back to the 17th century.", tags:["Matcha","Chado","Heritage"] },
+  { name:"Nakamura-ro Teahouse", city:"Kyoto, Japan", lat:35.02, lng:135.77, type:"East Asian", desc:"Japan's oldest teahouse, founded in 1465, nestled beside the Kitano Tenmangu shrine.", tags:["Matcha","1465","Zen"] },
+  { name:"Osulloc Tea Museum", city:"Jeju, South Korea", lat:33.38, lng:126.25, type:"East Asian", desc:"Sitting amid lush green tea fields, this museum-café celebrates Korean green tea culture with panoramic views.", tags:["Korean green tea","Museum","Scenic"] },
+  { name:"Yongsan Tea Museum", city:"Seoul, South Korea", lat:37.53, lng:126.98, type:"East Asian", desc:"A serene urban teahouse in Seoul showcasing Korean traditional tea rituals and antique pottery.", tags:["Korean tea","Pottery","Ceremony"] },
+  { name:"Maokong Gondola Teahouse", city:"Taipei, Taiwan", lat:24.97, lng:121.58, type:"East Asian", desc:"Perched high in the mountains reachable by gondola, famous for Tieguanyin oolong grown on the very hillside.", tags:["Oolong","Mountain","Views"] },
+  { name:"Pinglin Tea Museum", city:"New Taipei, Taiwan", lat:24.92, lng:121.72, type:"East Asian", desc:"Located in Taiwan's premier tea-growing region, featuring interactive exhibits on oolong production.", tags:["Oolong","Museum","Pinglin"] },
+  { name:"Dilmah T-Lounge", city:"Colombo, Sri Lanka", lat:6.93, lng:79.85, type:"South Asian", desc:"Luxury flagship of Sri Lanka's iconic Dilmah brand, showcasing over 100 Ceylon teas in elegant surroundings.", tags:["Ceylon","Luxury","Single-estate"] },
+  { name:"Makaibari Tea Garden", city:"Darjeeling, India", lat:26.90, lng:88.26, type:"South Asian", desc:"The world's first biodynamic tea estate with a heritage bungalow where guests sip Darjeeling first flush.", tags:["Darjeeling","Biodynamic","Estate"] },
+  { name:"Connemara Hotel Tea Room", city:"Chennai, India", lat:13.06, lng:80.27, type:"South Asian", desc:"Colonial-era grand hotel hosting an opulent afternoon tea with Nilgiri teas and traditional sweets.", tags:["Nilgiri","Colonial","Afternoon tea"] },
+  { name:"Chaiwala of Mumbai", city:"Mumbai, India", lat:19.08, lng:72.88, type:"South Asian", desc:"Legendary street-side chai stand that has served spiced masala chai to Mumbaikars for over 60 years.", tags:["Masala chai","Street","Iconic"] },
+  { name:"Çamlıca Tea Garden", city:"Istanbul, Turkey", lat:41.03, lng:29.07, type:"Middle Eastern", desc:"High on Çamlıca Hill with sweeping Bosphorus views, this sprawling garden serves the classic tulip-glass çay.", tags:["Turkish tea","Bosphorus","Garden"] },
+  { name:"Souk Al-Mubarakiya Teahouse", city:"Kuwait City, Kuwait", lat:29.37, lng:47.98, type:"Middle Eastern", desc:"Traditional teahouse in a historic bazaar, pouring strong kahwa and sweet Moroccan mint tea for traders.", tags:["Kahwa","Bazaar","Mint tea"] },
+  { name:"Al Mandaloun Teahouse", city:"Beirut, Lebanon", lat:33.89, lng:35.50, type:"Middle Eastern", desc:"A refined Lebanese teahouse blending Ottoman heritage with modern design, famous for sage and thyme brews.", tags:["Herbal","Ottoman","Heritage"] },
+  { name:"Murchie's Tea & Coffee", city:"Victoria, Canada", lat:48.43, lng:-123.37, type:"European", desc:"Founded in 1894, a beloved Victorian institution serving hundreds of blended teas in a heritage setting.", tags:["Blends","1894","Colonial"] },
+  { name:"Fortnum & Mason", city:"London, UK", lat:51.51, lng:-0.14, type:"European", desc:"Founded in 1707, the quintessential British tea purveyor with a legendary Diamond Jubilee Tea Salon.", tags:["Afternoon tea","1707","Royal"] },
+  { name:"The Ritz Tea Room", city:"London, UK", lat:51.52, lng:-0.15, type:"European", desc:"The gold standard for British afternoon tea, with finger sandwiches, scones and clotted cream since 1906.", tags:["Afternoon tea","Luxury","Scones"] },
+  { name:"Café Hawelka", city:"Vienna, Austria", lat:48.21, lng:16.37, type:"European", desc:"Iconic Viennese coffeehouse that quietly serves top Assam teas alongside its famous Buchteln pastries.", tags:["Assam","Coffeehouse","Vienna"] },
+  { name:"Mariage Frères", city:"Paris, France", lat:48.86, lng:2.36, type:"European", desc:"Established in 1854, the legendary French tea merchant with a salon in Le Marais serving 500+ references.", tags:["French tea","1854","Luxury"] },
+  { name:"Demmers Teehaus", city:"Vienna, Austria", lat:48.20, lng:16.36, type:"European", desc:"A Viennese institution blending Eastern European tradition with global teas in an art nouveau setting.", tags:["Blends","Art Nouveau","Vienna"] },
+  { name:"Bettys Tea Room", city:"Harrogate, UK", lat:53.99, lng:-1.54, type:"European", desc:"A beloved Yorkshire institution since 1919, famed for its Fat Rascal scones and floral afternoon tea.", tags:["Yorkshire","Scones","1919"] },
+  { name:"Grand Salon du Thé", city:"Brussels, Belgium", lat:50.85, lng:4.35, type:"European", desc:"A Baroque-style salon in Brussels offering rare single-origin teas alongside handmade Belgian chocolates.", tags:["Chocolate","Single-origin","Baroque"] },
+  { name:"Greenfields Tea Lounge", city:"Nairobi, Kenya", lat:-1.29, lng:36.82, type:"South Asian", desc:"A garden tea lounge at the edge of the city, serving freshly-picked Kenyan highland teas from nearby estates.", tags:["Kenyan tea","Highland","Garden"] },
+  { name:"Nyungwe Forest Tea Rooms", city:"Kigali, Rwanda", lat:-1.94, lng:30.06, type:"South Asian", desc:"Rwanda's finest specialty tea served in a lush eco-lodge surrounded by forest, showcasing terroir-driven cups.", tags:["Rwandan tea","Specialty","Eco-lodge"] },
+  { name:"Periyakulam Tea Estate", city:"Ooty, India", lat:11.41, lng:76.70, type:"South Asian", desc:"A heritage Nilgiri estate bungalow where guests enjoy fresh-picked orange pekoe against misty mountain scenery.", tags:["Nilgiri","Heritage","Estate"] },
+  { name:"Zen Tea Garden", city:"San Francisco, USA", lat:37.77, lng:-122.42, type:"East Asian", desc:"A calm Japanese-inspired teahouse in the Japanese Tea Garden of Golden Gate Park, open since 1894.", tags:["Matcha","Japanese","1894"] },
+  { name:"Sung Tea", city:"Los Angeles, USA", lat:34.05, lng:-118.24, type:"East Asian", desc:"A minimalist LA teahouse specialising in rare single-origin Taiwanese and Chinese teas.", tags:["Single-origin","Minimalist","Taiwanese"] },
+  { name:"Tea Chai Té", city:"Portland, USA", lat:45.52, lng:-122.68, type:"East Asian", desc:"Portland's cozy tea sanctuary with an eclectic menu of global teas, known for its creative tea lattes.", tags:["Tea lattes","Eclectic","Cozy"] },
+  { name:"Chado Tea Room", city:"Los Angeles, USA", lat:34.06, lng:-118.30, type:"East Asian", desc:"A peaceful LA destination with over 300 teas from around the world, from sencha to Egyptian chamomile.", tags:["300+ teas","World teas","Peaceful"] },
+  { name:"Lin's Garden Teahouse", city:"Chengdu, China", lat:30.57, lng:104.07, type:"East Asian", desc:"A classic Sichuanese teahouse in a courtyard garden, where patrons play mahjong and sip jasmine tea all afternoon.", tags:["Jasmine","Mahjong","Courtyard"] },
+  { name:"Hoshino Resorts KAI", city:"Hakone, Japan", lat:35.23, lng:139.10, type:"East Asian", desc:"A ryokan tea lounge serving hand-whisked matcha with wagashi sweets against views of Mt. Fuji.", tags:["Matcha","Wagashi","Mt. Fuji"] },
+  { name:"The Tea Collective", city:"Melbourne, Australia", lat:-37.81, lng:144.96, type:"South Asian", desc:"Melbourne's premier loose-leaf destination, blending Australian bush botanicals with premium Ceylon teas.", tags:["Bush botanicals","Ceylon","Melbourne"] },
+  { name:"Jing Tea", city:"Hong Kong", lat:22.32, lng:114.17, type:"East Asian", desc:"A contemporary Hong Kong teahouse focused on traceable, sustainable teas from small family farms.", tags:["Sustainable","Family farms","Contemporary"] },
+  { name:"Kissa Tanto", city:"Vancouver, Canada", lat:49.28, lng:-123.11, type:"East Asian", desc:"A Japanese-Italian hybrid café renowned in Vancouver for its elaborate matcha desserts and rare sencha.", tags:["Sencha","Desserts","Japanese-Italian"] },
+  { name:"Pekoe Tea Lounge", city:"Cape Town, South Africa", lat:-33.93, lng:18.42, type:"South Asian", desc:"A sun-drenched Cape Town lounge celebrating Rooibos and Honeybush alongside world teas.", tags:["Rooibos","Honeybush","Cape Town"] }
+];
+
+/* ────────────────────────────────────────────────
+   STATE
+──────────────────────────────────────────────── */
+const categories = [...new Set(teaHouses.map(t => t.type))];
+let activeFilter = "All";
+let zoom = 1, panX = 0, panY = 0;
+let isDragging = false, dragStart = {x:0,y:0}, panStart = {x:0,y:0};
+let activePin = null;
+
+const mapWrap   = document.getElementById('map-wrap');
+const mapStage  = document.getElementById('map-stage');
+const worldSvg  = document.getElementById('world-svg');
+const tooltipEl = document.getElementById('tooltip');
+const shownEl   = document.getElementById('shown-count');
+const filterBar = document.getElementById('filter-bar');
+const intro     = document.getElementById('intro');
+
+/* ────────────────────────────────────────────────
+   HELPERS
+──────────────────────────────────────────────── */
+function getIcon(type) {
+  const icons = { "East Asian":"🍵", "South Asian":"☕", "Middle Eastern":"🫖", "European":"🍶" };
+  return icons[type] || "🍵";
+}
+
+// Natural Earth projection matching viewBox 0 0 1000 500
+const projection = d3.geoNaturalEarth1().scale(153).translate([500, 250]);
+
+function latLngToPct(lat, lng) {
+  const [x, y] = projection([lng, lat]);
+  return { px: (x / 1000) * 100, py: (y / 500) * 100 };
+}
+
+/* ────────────────────────────────────────────────
+   ZOOM / PAN
+──────────────────────────────────────────────── */
+function applyTransform() {
+  mapStage.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
+  mapStage.style.transformOrigin = '0 0';
+}
+
+mapWrap.addEventListener('mousedown', e => {
+  if (e.target.closest('.tea-pin') || e.target.closest('.ctrl-btn')) return;
+  isDragging = true;
+  dragStart = {x: e.clientX, y: e.clientY};
+  panStart  = {x: panX, y: panY};
+  mapWrap.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  panX = panStart.x + (e.clientX - dragStart.x);
+  panY = panStart.y + (e.clientY - dragStart.y);
+  applyTransform();
+});
+window.addEventListener('mouseup', () => { isDragging = false; mapWrap.style.cursor = 'grab'; });
+
+mapWrap.addEventListener('wheel', e => {
+  e.preventDefault();
+  const delta = e.deltaY < 0 ? 1.15 : 0.87;
+  zoom = Math.min(Math.max(zoom * delta, 1), 7);
+  if (zoom === 1) { panX = 0; panY = 0; }
+  applyTransform();
+}, { passive: false });
+
+// Touch support
+let lastTouchDist = null;
+mapWrap.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) {
+    isDragging = true;
+    dragStart = {x: e.touches[0].clientX, y: e.touches[0].clientY};
+    panStart  = {x: panX, y: panY};
+  } else if (e.touches.length === 2) {
+    lastTouchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  }
+});
+mapWrap.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 1 && isDragging) {
+    panX = panStart.x + (e.touches[0].clientX - dragStart.x);
+    panY = panStart.y + (e.touches[0].clientY - dragStart.y);
+    applyTransform();
+  } else if (e.touches.length === 2) {
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    if (lastTouchDist) {
+      zoom = Math.min(Math.max(zoom * (dist / lastTouchDist), 1), 7);
+      applyTransform();
+    }
+    lastTouchDist = dist;
+  }
+}, { passive: false });
+mapWrap.addEventListener('touchend', () => { isDragging = false; lastTouchDist = null; });
+
+document.getElementById('zoom-in').onclick    = () => { zoom = Math.min(zoom * 1.4, 7); applyTransform(); };
+document.getElementById('zoom-out').onclick   = () => { zoom = Math.max(zoom / 1.4, 1); if (zoom === 1) { panX=0; panY=0; } applyTransform(); };
+document.getElementById('zoom-reset').onclick = () => { zoom=1; panX=0; panY=0; applyTransform(); };
+
+/* ────────────────────────────────────────────────
+   TOOLTIP
+──────────────────────────────────────────────── */
+function showTooltip(tea, pinEl) {
+  if (activePin) activePin.classList.remove('active');
+  activePin = pinEl;
+  pinEl.classList.add('active');
+
+  tooltipEl.innerHTML = `
+    <span class="tooltip-icon">${getIcon(tea.type)}</span>
+    <h3>${tea.name}</h3>
+    <div class="city">${tea.city}</div>
+    <p>${tea.desc}</p>
+    <div class="tooltip-tags">${tea.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+  `;
+
+  const r = pinEl.getBoundingClientRect();
+  let left = r.right + 10;
+  let top  = r.top - 20;
+
+  tooltipEl.style.display = 'block';
+  tooltipEl.classList.remove('visible');
+  const tw = tooltipEl.offsetWidth;
+  const th = tooltipEl.offsetHeight;
+
+  if (left + tw > window.innerWidth - 10) left = r.left - tw - 10;
+  if (top + th > window.innerHeight - 10) top = window.innerHeight - th - 10;
+  if (top < 70) top = 70;
+
+  tooltipEl.style.left = left + 'px';
+  tooltipEl.style.top  = top + 'px';
+  requestAnimationFrame(() => tooltipEl.classList.add('visible'));
+}
+
+function hideTooltip() {
+  tooltipEl.classList.remove('visible');
+  if (activePin) { activePin.classList.remove('active'); activePin = null; }
+}
+
+mapWrap.addEventListener('click', e => {
+  if (!e.target.closest('.tea-pin')) hideTooltip();
+});
+
+/* ────────────────────────────────────────────────
+   FILTERS
+──────────────────────────────────────────────── */
+function buildFilters() {
+  const all = document.createElement('button');
+  all.className = 'filter-btn active';
+  all.textContent = 'All';
+  all.onclick = () => setFilter('All', all);
+  filterBar.appendChild(all);
+
+  categories.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn';
+    btn.textContent = cat;
+    btn.onclick = () => setFilter(cat, btn);
+    filterBar.appendChild(btn);
+  });
+}
+
+function setFilter(cat, btn) {
+  activeFilter = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  let count = 0;
+  document.querySelectorAll('.tea-pin').forEach(pin => {
+    const show = (cat === 'All' || pin.dataset.type === cat);
+    pin.style.display = show ? 'flex' : 'none';
+    if (show) count++;
+  });
+  shownEl.textContent = count;
+  hideTooltip();
+}
+
+/* ────────────────────────────────────────────────
+   PINS
+──────────────────────────────────────────────── */
+function buildPins() {
+  teaHouses.forEach(tea => {
+    const { px, py } = latLngToPct(tea.lat, tea.lng);
+    const pin = document.createElement('div');
+    pin.className = 'tea-pin';
+    pin.dataset.type = tea.type;
+    pin.style.left = px + '%';
+    pin.style.top  = py + '%';
+
+    const pulse = document.createElement('div');
+    pulse.className = 'pin-pulse';
+    pin.appendChild(pulse);
+
+    const icon = document.createElement('span');
+    icon.className = 'pin-icon';
+    icon.textContent = getIcon(tea.type);
+    pin.appendChild(icon);
+
+    pin.onclick = e => {
+      e.stopPropagation();
+      if (activePin === pin) { hideTooltip(); return; }
+      showTooltip(tea, pin);
+    };
+
+    mapStage.appendChild(pin);
+  });
+}
+
+/* ────────────────────────────────────────────────
+   MAP LOAD
+──────────────────────────────────────────────── */
+async function loadMap() {
+  try {
+    const res   = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+    const world = await res.json();
+    const countries = topojson.feature(world, world.objects.countries);
+    const path  = d3.geoPath().projection(projection);
+    const g     = document.createElementNS('http://www.w3.org/2000/svg','g');
+
+    countries.features.forEach(f => {
+      const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d', path(f));
+      p.setAttribute('class', 'country-path');
+      g.appendChild(p);
+    });
+    worldSvg.appendChild(g);
+  } catch (err) {
+    console.warn('Map tiles failed to load:', err);
+  }
+
+  buildPins();
+  buildFilters();
+
+  // Dismiss intro
+  setTimeout(() => intro.classList.add('hidden'), 600);
+}
+
+loadMap();
+</script>
+</body>
+</html>
