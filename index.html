@@ -8,143 +8,61 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --cream: #faf6ef;
-      --parchment: #f0e8d8;
-      --tea-green: #4a7c59;
-      --tea-dark: #2d5a3d;
-      --tea-light: #a8c9b0;
-      --gold: #c9943a;
-      --gold-light: #e8c97a;
-      --ink: #1a1a14;
-      --ink-muted: #5a5548;
-      --water: #8bb4c8;
-      --water-light: #b8d4e4;
-      --ocean: #6a9fb5;
-      --land: #c8d8a8;
-      --land-hover: #b8cc95;
-      --shadow: rgba(26,26,20,0.15);
+      --cream: #faf6ef; --parchment: #f0e8d8; --tea-green: #4a7c59; --tea-dark: #2d5a3d;
+      --tea-light: #a8c9b0; --gold: #c9943a; --gold-light: #e8c97a; --ink: #1a1a14;
+      --ink-muted: #5a5548; --water: #8bb4c8; --water-light: #b8d4e4; --ocean: #6a9fb5;
+      --land: #c8d8a8; --land-hover: #b8cc95; --shadow: rgba(26,26,20,0.15);
     }
+    html, body { width: 100%; height: 100%; font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); overflow: hidden; }
 
-    html, body {
-      width: 100%; height: 100%;
-      font-family: 'DM Sans', sans-serif;
-      background: var(--cream);
-      color: var(--ink);
-      overflow: hidden;
-    }
-
-    /* ── Header ── */
     header {
-      position: fixed; top: 0; left: 0; right: 0;
-      z-index: 200;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 15px;
-      height: auto;
-      min-height: 64px;
-      background: var(--cream);
-      border-bottom: 1px solid rgba(26,26,20,0.12);
-      flex-wrap: wrap;
-      gap: 10px;
-      padding-bottom: 10px;
+      padding: 0 15px; height: auto; min-height: 64px; background: var(--cream);
+      border-bottom: 1px solid rgba(26,26,20,0.12); flex-wrap: wrap; gap: 10px; padding-bottom: 10px;
     }
     .header-title { display: flex; align-items: baseline; gap: 10px; }
-    .header-title h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: 18px; font-weight: 600;
-      color: var(--ink); letter-spacing: 0.01em;
-    }
-    .header-title span {
-      font-size: 13px; color: var(--ink-muted); font-weight: 300;
-      letter-spacing: 0.06em; text-transform: uppercase;
-    }
-    .header-right {
-      display: flex; align-items: center; gap: 8px;
-      overflow-x: auto; width: 100%; padding-bottom: 5px;
-    }
+    .header-title h1 { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 600; color: var(--ink); }
+    .header-right { display: flex; align-items: center; gap: 8px; overflow-x: auto; width: 100%; padding-bottom: 5px; }
+    
     .filter-btn {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px; font-weight: 400;
-      padding: 5px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(26,26,20,0.2);
-      background: transparent;
-      color: var(--ink-muted);
-      cursor: pointer;
-      transition: all 0.15s;
-      white-space: nowrap;
+      font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 5px 14px;
+      border-radius: 999px; border: 1px solid rgba(26,26,20,0.2); background: transparent;
+      color: var(--ink-muted); cursor: pointer; white-space: nowrap; transition: all 0.15s;
     }
     .filter-btn.active { background: var(--tea-green); border-color: var(--tea-green); color: #fff; }
 
-    /* ── Map ── */
-    #map-wrap {
-      position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
-      overflow: hidden; background: var(--water-light); cursor: grab;
-    }
+    #map-wrap { position: fixed; top: 64px; left: 0; right: 0; bottom: 0; overflow: hidden; background: var(--water-light); cursor: grab; }
     #map-stage { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; will-change: transform; }
     svg#world-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
     .country-path { fill: var(--land); stroke: #fff; stroke-width: 0.5px; }
 
-    /* ── Pins ── */
-    .tea-pin {
-      position: absolute; transform: translate(-50%, -50%);
-      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; z-index: 10; transition: transform 0.15s cubic-bezier(.34,1.56,.64,1);
-    }
+    .tea-pin { position: absolute; transform: translate(-50%, -50%); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; transition: transform 0.15s; }
     .pin-icon { font-size: 20px; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.25)); }
-    .pin-pulse {
-      position: absolute; inset: 0; border-radius: 50%;
-      background: rgba(74,124,89,0.2); animation: pulse 2.4s ease-out infinite; pointer-events: none;
-    }
+    .pin-pulse { position: absolute; inset: 0; border-radius: 50%; background: rgba(74,124,89,0.2); animation: pulse 2.4s infinite; pointer-events: none; }
     @keyframes pulse { 0% { transform: scale(0.7); opacity: 0.7; } 100% { transform: scale(2); opacity: 0; } }
 
-    /* ── Tooltip (Mobile First) ── */
     .tooltip {
-      position: fixed; z-index: 500; background: var(--cream);
-      border: 1px solid rgba(26,26,20,0.12); border-radius: 12px; padding: 20px;
-      box-shadow: 0 -4px 32px rgba(26,26,20,0.15);
+      position: fixed; z-index: 500; background: var(--cream); border: 1px solid rgba(26,26,20,0.12);
+      border-radius: 12px; padding: 20px; box-shadow: 0 -4px 32px rgba(26,26,20,0.15);
       width: 100% !important; left: 0 !important; bottom: 0 !important; top: auto !important;
       border-bottom-left-radius: 0; border-bottom-right-radius: 0;
-      transform: translateY(100%); transition: transform 0.3s ease-out, opacity 0.3s;
-      pointer-events: auto; opacity: 0;
+      transform: translateY(100%); transition: transform 0.3s ease-out, opacity 0.3s; opacity: 0;
     }
     .tooltip.visible { transform: translateY(0); opacity: 1; }
     .tooltip-icon { font-size: 26px; margin-bottom: 8px; display: block; }
-    .tooltip h3 { font-family: 'Playfair Display', serif; font-size: 16px; margin-bottom: 4px; }
-    .tooltip .city { font-size: 11px; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
-    .tooltip p { font-size: 13px; color: var(--ink-muted); line-height: 1.5; }
 
-    /* ── Controls & Counter ── */
     .map-controls { position: fixed; bottom: 15px; left: 15px; z-index: 200; display: flex; flex-direction: column; gap: 6px; }
     .ctrl-btn { width: 36px; height: 36px; background: var(--cream); border: 1px solid rgba(26,26,20,0.15); border-radius: 8px; cursor: pointer; }
     .counter { position: fixed; bottom: 15px; right: 15px; z-index: 200; background: var(--cream); border: 1px solid rgba(26,26,20,0.12); border-radius: 10px; padding: 8px 12px; text-align: center; }
-    .counter-num { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--tea-green); font-weight: 600; }
-    .counter-label { font-size: 9px; color: var(--ink-muted); text-transform: uppercase; }
-
-    /* ── Legend ── */
-    .legend {
-      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-      z-index: 200; background: var(--cream); border: 1px solid rgba(26,26,20,0.12);
-      border-radius: 10px; padding: 8px 16px; display: flex; gap: 12px;
-      width: 90%; overflow-x: auto; white-space: nowrap;
-    }
-    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; }
-
-    /* ── Desktop Overrides ── */
+    .legend { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 200; background: var(--cream); border: 1px solid rgba(26,26,20,0.12); border-radius: 10px; padding: 8px 16px; display: flex; gap: 12px; width: 90%; overflow-x: auto; }
+    
     @media (min-width: 768px) {
-      header { height: 64px; flex-wrap: nowrap; padding: 0 28px; padding-bottom: 0; }
-      .header-title h1 { font-size: 22px; }
-      .header-right { width: auto; overflow: visible; }
-      .tooltip { 
-        width: 280px !important; bottom: auto !important; border-radius: 12px; 
-        transform: translateY(6px); box-shadow: 0 8px 32px rgba(26,26,20,0.12);
-      }
-      .legend { width: auto; bottom: 28px; overflow: visible; }
-      .counter { bottom: 28px; right: 28px; }
-      .map-controls { bottom: 28px; left: 28px; }
+      header { height: 64px; flex-wrap: nowrap; padding: 0 28px; }
+      .tooltip { width: 280px !important; bottom: auto !important; border-radius: 12px; transform: translateY(6px); }
+      .legend { width: auto; bottom: 28px; }
     }
-
     #intro { position: fixed; inset: 0; z-index: 999; background: var(--cream); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; transition: opacity 0.6s; }
     #intro.hidden { opacity: 0; pointer-events: none; }
   </style>
@@ -190,14 +108,13 @@
   <div class="legend-item"><span>🍵</span> East Asian</div>
   <div class="legend-item"><span>☕</span> South Asian</div>
   <div class="legend-item"><span>🫖</span> Middle Eastern</div>
-  <div class="legend-item"><span>🍶</span> European / Heritage</div>
+  <div class="legend-item"><span>🍶</span> European</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 
 <script>
-// (Keep your teaHouses data array here exactly as it is)
 const teaHouses = [
   { "name":"Wangfujing Teahouse", "city":"Beijing, China", "lat":39.9138, "lng":116.4117, "type":"East Asian", "desc":"A grand multi-story teahouse in Beijing's famous shopping street, hosting traditional gongfu cha ceremonies." },
   { "name":"Ten Fu Tea", "city":"Shanghai, China", "lat":31.2304, "lng":121.4737, "type":"East Asian", "desc":"One of Shanghai's most beloved chain teahouses, celebrated for Longjing green tea and dim sum pairings." },
@@ -243,27 +160,23 @@ const teaHouses = [
 ];
 
 const categories = [...new Set(teaHouses.map(t => t.type))];
-let zoom = 1, panX = 0, panY = 0;
-let isDragging = false, dragStart = {x:0,y:0}, panStart = {x:0,y:0}, activePin = null;
+let zoom = 1, panX = 0, panY = 0, isDragging = false, dragStart = {x:0,y:0}, panStart = {x:0,y:0}, activePin = null;
 
 const mapWrap = document.getElementById('map-wrap'), mapStage = document.getElementById('map-stage'), 
       worldSvg = document.getElementById('world-svg'), tooltipEl = document.getElementById('tooltip'),
       shownEl = document.getElementById('shown-count'), filterBar = document.getElementById('filter-bar');
 
-function getIcon(type) {
-  const icons = { "East Asian":"🍵", "South Asian":"☕", "Middle Eastern":"🫖", "European":"🫖" };
-  return icons[type] || "🍵";
-}
+const projection = d3.geoNaturalEarth1();
+const geoPath = d3.geoPath().projection(projection);
 
-const projection = d3.geoNaturalEarth1().scale(153).translate([500, 250]);
-function latLngToPct(lat, lng) {
-  const [x, y] = projection([lng, lat]);
-  return { px: (x / 1000) * 100, py: (y / 500) * 100 };
+function getIcon(type) {
+  const icons = { "East Asian":"🍵", "South Asian":"☕", "Middle Eastern":"🫖", "European":"🍶" };
+  return icons[type] || "🍵";
 }
 
 function applyTransform() { mapStage.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`; }
 
-// Desktop Pan
+// Pan interactions
 mapWrap.onmousedown = e => {
   if (e.target.closest('.tea-pin') || e.target.closest('.ctrl-btn')) return;
   isDragging = true; dragStart = {x: e.clientX, y: e.clientY}; panStart = {x: panX, y: panY};
@@ -271,11 +184,9 @@ mapWrap.onmousedown = e => {
 window.onmousemove = e => { if(isDragging) { panX = panStart.x + (e.clientX - dragStart.x); panY = panStart.y + (e.clientY - dragStart.y); applyTransform(); }};
 window.onmouseup = () => isDragging = false;
 
-// Tooltip Logic
 function showTooltip(tea, pinEl) {
   if (activePin) activePin.classList.remove('active');
   activePin = pinEl; pinEl.classList.add('active');
-
   tooltipEl.innerHTML = `
     <span class="tooltip-icon">${getIcon(tea.type)}</span>
     <h3>${tea.name}</h3>
@@ -283,15 +194,13 @@ function showTooltip(tea, pinEl) {
     <p>${tea.desc}</p>
     <button onclick="hideTooltip()" style="margin-top:12px; width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; background:#fff; cursor:pointer;" class="mobile-close">Close</button>
   `;
-
   tooltipEl.style.display = 'block';
   if (window.innerWidth >= 768) {
     const r = pinEl.getBoundingClientRect();
     let left = r.right + 10, top = r.top - 20;
     if (left + 280 > window.innerWidth) left = r.left - 290;
     tooltipEl.style.left = left + 'px'; tooltipEl.style.top = top + 'px';
-    const closeBtn = tooltipEl.querySelector('.mobile-close');
-    if(closeBtn) closeBtn.style.display = 'none';
+    if(tooltipEl.querySelector('.mobile-close')) tooltipEl.querySelector('.mobile-close').style.display = 'none';
   } else {
     tooltipEl.style.left = '0'; tooltipEl.style.top = 'auto';
   }
@@ -304,7 +213,33 @@ function hideTooltip() {
   activePin = null;
 }
 
-mapWrap.onclick = e => { if (!e.target.closest('.tea-pin')) hideTooltip(); };
+function buildPins() {
+  document.querySelectorAll('.tea-pin').forEach(p => p.remove());
+  teaHouses.forEach(tea => {
+    const coords = projection([tea.lng, tea.lat]);
+    if (coords) {
+      const [x, y] = coords;
+      const pin = document.createElement('div');
+      pin.className = 'tea-pin'; pin.dataset.type = tea.type;
+      pin.style.left = (x / 1000 * 100) + '%';
+      pin.style.top  = (y / 500 * 100) + '%';
+      pin.innerHTML = `<div class="pin-pulse"></div><span class="pin-icon">${getIcon(tea.type)}</span>`;
+      pin.onclick = e => { e.stopPropagation(); showTooltip(tea, pin); };
+      mapStage.appendChild(pin);
+    }
+  });
+}
+
+function buildFilters() {
+  const allBtn = document.createElement('button');
+  allBtn.className = 'filter-btn active'; allBtn.textContent = 'All';
+  allBtn.onclick = () => setFilter('All', allBtn);
+  filterBar.appendChild(allBtn);
+  categories.forEach(cat => {
+    const b = document.createElement('button'); b.className = 'filter-btn'; b.textContent = cat;
+    b.onclick = () => setFilter(cat, b); filterBar.appendChild(b);
+  });
+}
 
 function setFilter(cat, btn) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -320,41 +255,22 @@ function setFilter(cat, btn) {
 
 async function loadMap() {
   try {
-    const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
-    const world = await res.json();
-    const countries = topojson.feature(world, world.objects.countries);
-    const path = d3.geoPath().projection(projection);
+    const res = await fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson');
+    const data = await res.json();
+    projection.fitSize([1000, 500], data);
     const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-    countries.features.forEach(f => {
+    data.features.forEach(f => {
       const p = document.createElementNS('http://www.w3.org/2000/svg','path');
-      p.setAttribute('d', path(f)); p.setAttribute('class', 'country-path'); g.appendChild(p);
+      p.setAttribute('d', geoPath(f)); p.setAttribute('class', 'country-path'); g.appendChild(p);
     });
     worldSvg.appendChild(g);
-  } catch (e) {}
-
-  teaHouses.forEach(tea => {
-    const { px, py } = latLngToPct(tea.lat, tea.lng);
-    const pin = document.createElement('div');
-    pin.className = 'tea-pin'; pin.dataset.type = tea.type;
-    pin.style.left = px + '%'; pin.style.top = py + '%';
-    pin.innerHTML = `<div class="pin-pulse"></div><span class="pin-icon">${getIcon(tea.type)}</span>`;
-    pin.onclick = e => { e.stopPropagation(); showTooltip(tea, pin); };
-    mapStage.appendChild(pin);
-  });
-
-  const allBtn = document.createElement('button');
-  allBtn.className = 'filter-btn active'; allBtn.textContent = 'All';
-  allBtn.onclick = () => setFilter('All', allBtn);
-  filterBar.appendChild(allBtn);
-  categories.forEach(cat => {
-    const b = document.createElement('button'); b.className = 'filter-btn'; b.textContent = cat;
-    b.onclick = () => setFilter(cat, b); filterBar.appendChild(b);
-  });
-
+    buildPins();
+    buildFilters();
+  } catch (err) { console.error(err); }
+  
   document.getElementById('zoom-in').onclick = () => { zoom *= 1.4; applyTransform(); };
   document.getElementById('zoom-out').onclick = () => { zoom = Math.max(1, zoom/1.4); applyTransform(); };
   document.getElementById('zoom-reset').onclick = () => { zoom=1; panX=0; panY=0; applyTransform(); };
-  
   setTimeout(() => document.getElementById('intro').classList.add('hidden'), 600);
 }
 
