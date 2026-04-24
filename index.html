@@ -964,11 +964,13 @@ function computeClusters(teas) {
 }
 
 let expandedCluster = null;
+let clusterUid = 0;
 
 function collapseExpanded() {
   if (!expandedCluster) return;
-  const { el, cluster } = expandedCluster;
-  el.selectAll('.fan-pin').remove();
+  const { uid, el } = expandedCluster;
+  // Remove fan pins by their uid class, searched from the whole pin-layer
+  d3.selectAll('.fan-pin-' + uid).remove();
   el.select('.cluster-shield').attr('opacity', 0.92);
   el.select('.cluster-label').attr('opacity', 1);
   expandedCluster = null;
@@ -1032,10 +1034,13 @@ function buildPins(pinLayer) {
         }
         collapseExpanded();
 
+        const uid = ++clusterUid;
         const count = teas.length;
         const fanR = Math.max(32, 24 + count * 6);
         const angleStep = (Math.PI * 1.6) / Math.max(count - 1, 1);
         const startAngle = -Math.PI / 2 - ((count - 1) * angleStep / 2);
+        // pinLayer is the parent SVG group for all pins
+        const pinLayerEl = d3.select(this.closest('.pin-layer'));
 
         teas.forEach((tea, i) => {
           const angle = count === 1 ? -Math.PI / 2 : startAngle + i * angleStep;
@@ -1044,8 +1049,8 @@ function buildPins(pinLayer) {
           const tm = categoryMeta[tea.type];
           const tcls = tm ? tm.cls : 'east';
 
-          const fp = d3.select(this.parentNode).append('g')
-            .attr('class', 'fan-pin tea-pin')
+          const fp = pinLayerEl.append('g')
+            .attr('class', `fan-pin tea-pin fan-pin-${uid}`)
             .attr('data-id', tea.id)
             .attr('data-type', tea.type)
             .attr('role', 'button')
@@ -1100,7 +1105,7 @@ function buildPins(pinLayer) {
 
         d3.select(this).select('.cluster-shield').attr('opacity', 0.35);
         d3.select(this).select('.cluster-label').attr('opacity', 0.25);
-        expandedCluster = { el: d3.select(this), cluster };
+        expandedCluster = { uid, el: d3.select(this), cluster };
 
       } else {
         selectTea(teas[0].id);
@@ -1152,11 +1157,10 @@ function updatePinsVisibility() {
     const anyVisible = ids.some(id => visible.has(id));
     pin.style.display = anyVisible ? '' : 'none';
   });
-  // Fan pins (expanded cluster children) — hide individually
+  // Fan pins (expanded cluster) — hide individually if visible
   document.querySelectorAll('.fan-pin').forEach(pin => {
     const id = parseInt(pin.getAttribute('data-id'));
-    pin.style.display = visible.has(id) ? '' : 'none';
-    pin.classList.toggle('selected', id === selectedId);
+    if (!visible.has(id)) pin.style.display = 'none';
   });
   const count = visible.size;
   document.getElementById('pin-counter').innerHTML = `<strong>${count}</strong> ${count === 1 ? 'tea house' : 'tea houses'}`;
